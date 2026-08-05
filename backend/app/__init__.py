@@ -1,0 +1,1 @@
+"""Curato backend application package."""
