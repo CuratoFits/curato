@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from models.model import ItemCategory, UserRole
+from app.models.model import ItemCategory, UserRole
 
 
 class LoginRequest(BaseModel):
