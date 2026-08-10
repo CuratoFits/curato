@@ -13,13 +13,6 @@ except Exception:  # pragma: no cover - optional dependency during setup
 
 
 class GraphBuilder:
-    """Minimal graph builder scaffold for the LangGraph layer.
-
-    If LangGraph is available, the builder returns a compiled graph with a
-    single event-fetcher node. Otherwise it gracefully falls back to a plain
-    dictionary representation so the package stays importable.
-    """
-
     def build(self) -> Any:
         if StateGraph is None:
             return {

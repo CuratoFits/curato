@@ -4,12 +4,6 @@ from ..state.userState import UserState
 
 
 class EventFetcherAgent:
-    """Minimal event fetcher node scaffold for LangGraph.
-
-    This node is intended to read incoming event payloads and update the
-    user state with the newest event list and preferences.
-    """
-
     def __call__(self, state: UserState) -> dict[str, Any]:
         user_id = state.get("user_id")
         events = state.get("events", [])
