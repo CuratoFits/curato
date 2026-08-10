@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from typing import Any, List, TypedDict
 
 
-class UserState(TypedDict, total=False):
-    user_id: int
-    events: list[dict[str, Any]]
-    preferences: dict[str, Any]
-    updated_at: str | None
+class UserState():
+    def __init__(self):
+        self.user_id: str | None = None
+        self.events: list[dict[str, Any]]= []
 
-
-DEFAULT_USER_PREFERENCES: dict[str, Any] = {}
+    def updateUserState(self,user_id: str, events: list[dict[str, Any]]) -> None:
+        self.user_id = user_id
+        self.events.extend(events)

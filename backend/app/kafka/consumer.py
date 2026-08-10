@@ -1,5 +1,5 @@
 from confluent_kafka import Consumer
-from app.postgres import send_to_postgres
+from app.postgres import postgres_handler
 
 import json
 consumer = Consumer({
@@ -22,7 +22,7 @@ def consumer_subscribe():
             event_json = json.loads(msg.value().decode('utf-8'))
             print(f"Received event: {event_json}")
             try:
-                 send_to_postgres(event_json)
+                 postgres_handler.send_to_postgres(event_json)
                  print(f"Event sent to PostgreSQL:")
                  consumer.commit(message=msg)
             except Exception as e:
