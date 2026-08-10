@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..agents.event_fetcher import event_fetcher
+from ..agents.userBehaviorAgent import UserBehaviorAgent
 from ..state.userState import UserState
 
 try:
@@ -17,14 +18,16 @@ class GraphBuilder:
         if StateGraph is None:
             return {
                 "entry": event_fetcher,
-                "nodes": [event_fetcher],
+                "nodes": [event_fetcher, UserBehaviorAgent],
                 "edges": [],
             }
 
         workflow = StateGraph(UserState)
         workflow.add_node("event_fetcher", event_fetcher)
+        workflow.add_node("user_behavior_agent", UserBehaviorAgent)
         workflow.add_edge(START, "event_fetcher")
-        workflow.add_edge("event_fetcher", END)
+        workflow.add_edge("event_fetcher", "user_behavior_agent")
+        workflow.add_edge("user_behavior_agent", END)
         return workflow.compile()
 
 
