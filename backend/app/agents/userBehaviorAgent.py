@@ -29,7 +29,7 @@ class UserBehaviorAgent:
                 "events": past_user_behavior,
                 "current_state": current_state
             }
-            insight = userBehaviorLLM(user_behavior)
+            insight = userBehaviorLLM().analyze_user_behavior(user_behavior)
             print(f"User behavior insights for {user_id}: {insight}")
         except Exception as e:
             print(f"Error at user_behavior: {e}")

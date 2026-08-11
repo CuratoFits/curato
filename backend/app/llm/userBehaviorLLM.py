@@ -12,7 +12,7 @@ class UserBehaviorLLM:
     def __init__(self):
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    def user_behavior_llm(self, user_behavior: dict[str, Any]) -> list[dict[str, Any]]:
+    def analyze_user_behavior(self, user_behavior: dict[str, Any]) -> list[dict[str, Any]]:
 
         prompt = f"""
                 You are a user behavior analyzer for an e-commerce recommendation system.
