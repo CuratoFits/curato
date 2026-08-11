@@ -22,11 +22,11 @@ class UserBehaviorAgent:
 
     def user_behavior(self, user_id: str) -> dict[str, any]:
         try:
-            events = self.user_history(user_id)
+            past_user_behavior = self.user_history(user_id)
             current_state = self.user_current_state(user_id)
             user_behavior = {
                 "user_id": user_id,
-                "events": events,
+                "events": past_user_behavior,
                 "current_state": current_state
             }
             insight = userBehaviorLLM(user_behavior)
