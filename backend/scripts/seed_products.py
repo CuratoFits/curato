@@ -1,54 +1,56 @@
 from pathlib import Path
 
+import math
+
 import pandas as pd
-from sqlalchemy import select, text
+from sqlalchemy import text
 
 from app.connections.connection import SessionLocal
 from app.models.product import Product
 
 
 # ---------------------------------------------------------
-# File paths
+# PATHS
 # ---------------------------------------------------------
 
-BASE_DIR = Path(__file__).resolve().parents[1]
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-CSV_PATH = BASE_DIR / "data" / "products.csv"
+CSV_PATH = BASE_DIR / "data" / "raw" / "products.csv"
 
 
 # ---------------------------------------------------------
-# Utility functions
+# HELPER
 # ---------------------------------------------------------
 
 def clean_value(value):
     """
     Convert pandas NaN values to None.
 
-    This ensures missing CSV values are stored as
-    PostgreSQL NULL instead of pandas NaN.
+    Normal values are returned unchanged.
     """
 
-    if pd.isna(value):
+    if value is None:
+        return None
+
+    if isinstance(value, float) and math.isnan(value):
         return None
 
     return value
 
 
 # ---------------------------------------------------------
-# Product seeding
+# SEED PRODUCTS
 # ---------------------------------------------------------
 
 def seed_products():
 
     print(f"Reading products from: {CSV_PATH}")
 
-    # Make sure CSV exists
     if not CSV_PATH.exists():
         raise FileNotFoundError(
             f"Products CSV not found: {CSV_PATH}"
         )
 
-    # Read CSV
     df = pd.read_csv(CSV_PATH)
 
     print(f"Products found in CSV: {len(df)}")
@@ -60,113 +62,83 @@ def seed_products():
 
     try:
 
-        # -------------------------------------------------
-        # Get product URLs already stored in PostgreSQL
-        # -------------------------------------------------
-
-        existing_urls = set(
-            db.scalars(
-                select(Product.product_url)
-            ).all()
-        )
-
-        products = []
-
-        # -------------------------------------------------
-        # Convert CSV rows into Product objects
-        # -------------------------------------------------
-
         for _, row in df.iterrows():
 
             product_url = clean_value(
                 row["product_url"]
             )
 
-            # ---------------------------------------------
-            # Skip products already in database
-            # ---------------------------------------------
+            # -------------------------------------------------
+            # Skip product if it already exists
+            # -------------------------------------------------
 
-            if product_url in existing_urls:
-                skipped += 1
-                continue
+            if product_url is not None:
 
-            # ---------------------------------------------
-            # Create SQLAlchemy Product object
-            # ---------------------------------------------
+                existing = (
+                    db.query(Product)
+                    .filter(
+                        Product.product_url
+                        == product_url
+                    )
+                    .first()
+                )
+
+                if existing is not None:
+                    skipped += 1
+                    continue
+
+            # -------------------------------------------------
+            # Create product
+            # -------------------------------------------------
 
             product = Product(
                 id=int(row["product_id"]),
-
                 product_name=clean_value(
                     row["product_name"]
                 ),
-
                 category=clean_value(
                     row["category"]
                 ),
-
                 price=clean_value(
                     row["price"]
                 ),
-
                 description=clean_value(
                     row["description"]
                 ),
-
                 image_url=clean_value(
                     row["image_url"]
                 ),
-
                 product_url=product_url,
-
                 gender=clean_value(
                     row["gender"]
                 ),
-
                 rating=clean_value(
                     row["rating"]
                 ),
             )
 
-            products.append(product)
+            db.add(product)
 
-            # Prevent duplicates inside the same CSV
-            if product_url:
-                existing_urls.add(product_url)
+            inserted += 1
 
-        # -------------------------------------------------
-        # Insert products
-        # -------------------------------------------------
+        # -----------------------------------------------------
+        # Commit products
+        # -----------------------------------------------------
 
-        if products:
+        db.commit()
 
-            db.add_all(products)
-
-            db.commit()
-
-            inserted = len(products)
-
-        # -------------------------------------------------
+        # -----------------------------------------------------
         # Synchronize PostgreSQL ID sequence
-        # -------------------------------------------------
-        #
-        # We manually imported IDs from the CSV:
-        #
-        # 1 ... 2321
-        #
-        # PostgreSQL's automatic ID sequence therefore needs
-        # to be synchronized with the highest existing ID.
-        #
-        # After this, a newly created product will receive:
-        #
-        # 2322
-        # -------------------------------------------------
+        # -----------------------------------------------------
 
         db.execute(
             text(
                 """
                 SELECT setval(
-                    pg_get_serial_sequence('products', 'id'),
+                    pg_get_serial_sequence(
+                        'products',
+                        'id'
+                    ),
                     COALESCE(
                         (SELECT MAX(id) FROM products),
                         1
@@ -178,22 +150,15 @@ def seed_products():
 
         db.commit()
 
-        # -------------------------------------------------
-        # Results
-        # -------------------------------------------------
-
-        print("\nCatalog seeding completed.")
+        print()
+        print("Catalog seeding completed.")
         print(f"Inserted: {inserted}")
         print(f"Skipped: {skipped}")
         print(f"CSV total: {len(df)}")
 
-    except Exception as exc:
+    except Exception:
 
-        # Undo uncommitted database operations
         db.rollback()
-
-        print("\nCatalog seeding failed.")
-        print(f"Error: {exc}")
 
         raise
 
@@ -203,7 +168,7 @@ def seed_products():
 
 
 # ---------------------------------------------------------
-# Script entry point
+# ENTRY POINT
 # ---------------------------------------------------------
 
 if __name__ == "__main__":
