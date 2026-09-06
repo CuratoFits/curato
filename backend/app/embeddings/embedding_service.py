@@ -5,4 +5,5 @@ class EmbeddingService():
         self.embedding_model = embedding_model
         
     def embed(self, text: str) -> list[float]:
+        print("Embeddings being sent to embedding model")
         return self.embedding_model.embed(text)

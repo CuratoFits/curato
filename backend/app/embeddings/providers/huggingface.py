@@ -7,4 +7,5 @@ class HuggingFaceEmbedding(BaseEmbedding):
         self.model = SentenceTransformer(model_name)
         
     def embed(self, text: str) -> list[float]:
+        print("Embeddings being made using huggingface model")
         return self.model.encode(text).tolist()

@@ -1,8 +1,14 @@
-from chromadb import Client
 from abc import ABC, abstractmethod
 
 class VectorDB(ABC):
-    def __init__(self):
-        self.client = Client()
+    @abstractmethod
+    def add(self, vector: list[float],metadata: dict):
+        pass
+    @abstractmethod
+    def search(self, vector: list[float], top_k: int):
+        pass
+    @abstractmethod
+    def delete(self, vector: list[float]):
+        pass
 
     
