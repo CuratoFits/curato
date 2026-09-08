@@ -1,49 +1,34 @@
 from pathlib import Path
 
-import math
-
 import pandas as pd
 from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import insert
 
 from app.connections.connection import SessionLocal
 from app.models.product import Product
 
 
 # ---------------------------------------------------------
-# PATHS
+# Paths
 # ---------------------------------------------------------
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parents[1]
 
 CSV_PATH = BASE_DIR / "data" / "raw" / "products.csv"
 
 
 # ---------------------------------------------------------
-# HELPER
+# Configuration
 # ---------------------------------------------------------
 
-def clean_value(value):
-    """
-    Convert pandas NaN values to None.
-
-    Normal values are returned unchanged.
-    """
-
-    if value is None:
-        return None
-
-    if isinstance(value, float) and math.isnan(value):
-        return None
-
-    return value
+BATCH_SIZE = 500
 
 
 # ---------------------------------------------------------
-# SEED PRODUCTS
+# Seed products
 # ---------------------------------------------------------
 
-def seed_products():
-
+def seed_products() -> None:
     print(f"Reading products from: {CSV_PATH}")
 
     if not CSV_PATH.exists():
@@ -55,94 +40,89 @@ def seed_products():
 
     print(f"Products found in CSV: {len(df)}")
 
+    required_columns = [
+        "product_id",
+        "product_name",
+        "category",
+        "price",
+        "description",
+        "image_url",
+        "product_url",
+        "gender",
+        "rating",
+    ]
+
+    missing_columns = [
+        column for column in required_columns
+        if column not in df.columns
+    ]
+
+    if missing_columns:
+        raise ValueError(
+            f"Missing columns in products.csv: {missing_columns}"
+        )
+
+    # Replace pandas NaN values with Python None
+    df = df.where(pd.notna(df), None)
+
+    # Convert dataframe rows to dictionaries
+    records = []
+
+    for _, row in df.iterrows():
+        record = {
+            "id": int(row["product_id"]),
+            "product_name": row["product_name"],
+            "category": row["category"],
+            "price": row["price"],
+            "description": row["description"],
+            "image_url": row["image_url"],
+            "product_url": row["product_url"],
+            "gender": row["gender"],
+            "rating": row["rating"],
+        }
+
+        records.append(record)
+
+    print(f"Prepared {len(records)} products for insertion.")
+
     db = SessionLocal()
 
-    inserted = 0
-    skipped = 0
-
     try:
+        total = len(records)
 
-        for _, row in df.iterrows():
+        for start in range(0, total, BATCH_SIZE):
+            batch = records[start:start + BATCH_SIZE]
 
-            product_url = clean_value(
-                row["product_url"]
+            stmt = insert(Product).values(batch)
+
+            # If product_url already exists, skip that product.
+            stmt = stmt.on_conflict_do_nothing(
+                index_elements=["product_url"]
             )
 
-            # -------------------------------------------------
-            # Skip product if it already exists
-            # -------------------------------------------------
+            db.execute(stmt)
+            db.commit()
 
-            if product_url is not None:
+            end = min(start + BATCH_SIZE, total)
 
-                existing = (
-                    db.query(Product)
-                    .filter(
-                        Product.product_url
-                        == product_url
-                    )
-                    .first()
-                )
-
-                if existing is not None:
-                    skipped += 1
-                    continue
-
-            # -------------------------------------------------
-            # Create product
-            # -------------------------------------------------
-
-            product = Product(
-                id=int(row["product_id"]),
-                product_name=clean_value(
-                    row["product_name"]
-                ),
-                category=clean_value(
-                    row["category"]
-                ),
-                price=clean_value(
-                    row["price"]
-                ),
-                description=clean_value(
-                    row["description"]
-                ),
-                image_url=clean_value(
-                    row["image_url"]
-                ),
-                product_url=product_url,
-                gender=clean_value(
-                    row["gender"]
-                ),
-                rating=clean_value(
-                    row["rating"]
-                ),
+            print(
+                f"Inserted batch: {end}/{total} products"
             )
 
-            db.add(product)
-
-            inserted += 1
-
-        # -----------------------------------------------------
-        # Commit products
-        # -----------------------------------------------------
-
-        db.commit()
-
-        # -----------------------------------------------------
+        # -------------------------------------------------
         # Synchronize PostgreSQL ID sequence
-        # -----------------------------------------------------
+        # -------------------------------------------------
 
         db.execute(
             text(
                 """
                 SELECT setval(
-                    pg_get_serial_sequence(
-                        'products',
-                        'id'
-                    ),
+                    pg_get_serial_sequence('products', 'id'),
                     COALESCE(
                         (SELECT MAX(id) FROM products),
                         1
-                    )
+                    ),
+                    true
                 )
                 """
             )
@@ -150,25 +130,31 @@ def seed_products():
 
         db.commit()
 
+        # -------------------------------------------------
+        # Verify
+        # -------------------------------------------------
+
+        count = db.execute(
+            text("SELECT COUNT(*) FROM products")
+        ).scalar_one()
+
         print()
-        print("Catalog seeding completed.")
-        print(f"Inserted: {inserted}")
-        print(f"Skipped: {skipped}")
-        print(f"CSV total: {len(df)}")
+        print("=" * 50)
+        print("PRODUCT SEEDING COMPLETE")
+        print("=" * 50)
+        print(f"Products currently in database: {count}")
+        print("=" * 50)
 
     except Exception:
-
         db.rollback()
-
         raise
 
     finally:
-
         db.close()
 
 
 # ---------------------------------------------------------
-# ENTRY POINT
+# Entry point
 # ---------------------------------------------------------
 
 if __name__ == "__main__":
