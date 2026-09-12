@@ -9,7 +9,7 @@ class VectorStore(VectorDB):
         self.collection.add(id=Pid, embedding=vector, metadata=metadata)
 
     def search(self, vector: list[float], top_k: int):
-        return self.collection.search(embedding=vector, top_k=top_k)
+        return self.collection.search(embedding=vector, top_k=top_k,similarity_metric="cosine", include_metadata=True)
 
     def delete(self,pid:list[str]):
         self.collection.delete(ids=pid)
