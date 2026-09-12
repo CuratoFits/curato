@@ -1,37 +1,72 @@
-from fastapi import HTTPException
-
-from ..repository.repository import item_repository
-from ..schemas.schema import ItemCreateRequest, ItemUpdateRequest
+from app.repository.interfaces.product_repository import (
+    ProductRepository,
+)
+from app.schemas.product import (
+    ProductCreate,
+    ProductUpdate,
+)
 
 
 class ProductService:
-    def get_all_items(self):
-        return item_repository.get_all_items()
 
-    def create_item(self, payload: ItemCreateRequest):
-        item_id = item_repository.create_item(payload.model_dump())
-        return {
-            "message": "Item created successfully",
-            "item_id": item_id,
-        }
+    def __init__(
+        self,
+        repository: ProductRepository,
+    ):
+        self.repository = repository
 
-    def update_item(self, item_id: int, payload: ItemUpdateRequest):
-        existing_item = item_repository.get_item_by_id(item_id)
-        if not existing_item:
-            raise HTTPException(status_code=404, detail="Item not found")
+    def get_products(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+    ):
+        return self.repository.get_all(
+            skip=skip,
+            limit=limit,
+        )
 
-        item_repository.update_item(item_id, payload.model_dump(exclude_unset=True))
-        return {
-            "message": "Item updated successfully",
-            "item_id": item_id,
-        }
+    def get_product(
+        self,
+        product_id: int,
+    ):
+        return self.repository.get_by_id(
+            product_id
+        )
 
-    def delete_item(self, item_id: int):
-        existing_item = item_repository.get_item_by_id(item_id)
-        if not existing_item:
-            raise HTTPException(status_code=404, detail="Item not found")
-        item_repository.delete_item(item_id)
-        return {"message": "Item removed successfully"}
+    def get_products_by_category(
+        self,
+        category: str,
+        skip: int = 0,
+        limit: int = 20,
+    ):
+        return self.repository.get_by_category(
+            category=category,
+            skip=skip,
+            limit=limit,
+        )
 
+    def create_product(
+        self,
+        product: ProductCreate,
+    ):
+        return self.repository.create(
+            product
+        )
 
-product_service = ProductService()
+    def update_product(
+        self,
+        product_id: int,
+        product: ProductUpdate,
+    ):
+        return self.repository.update(
+            product_id,
+            product,
+        )
+
+    def delete_product(
+        self,
+        product_id: int,
+    ):
+        return self.repository.delete(
+            product_id
+        )
