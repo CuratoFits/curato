@@ -1,4 +1,4 @@
-from connections.connection import execute_query, fetch_all, fetch_one
+from ..connections.connection import execute_query, fetch_all, fetch_one
 
 
 class ItemRepository:

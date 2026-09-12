@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from app.api.product_routes import router as product_router
 from app.api.user_profile_routes import router as user_profile_router
 from app.api.interaction_routes import router as interaction_router
+from .api.routes import router
+from .connections.connection import initialize_database
 
 
 app = FastAPI(
