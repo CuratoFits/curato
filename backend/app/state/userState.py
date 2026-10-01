@@ -45,6 +45,7 @@ class UserState():
             print("User ID is not set. Cannot add top products to user state.")
         else:
             self.top_products.extend(top_products)
+            self.check_duplication_in_top_products(self.top_products)
             print(f"Top products added to user state for user_id: {self.user_id} with products: {top_products}")
             
     def update_user_preferences(self, user_id: str, preferences: dict[str, Any]) -> None:
@@ -59,3 +60,13 @@ class UserState():
         candidate_products= VectorDBSearchAgent().searchVectorDB(text)
         UserState.add_top_products_to_userState(self, candidate_products)
         print(f"VectorDB search completed for user_id: {self.user_id} with candidate products: {candidate_products}")    
+        
+    def check_duplication_in_top_products(self, top_products: list[dict[str, Any]]) -> None:
+        seen = set()
+        unique_top_products = []
+        for product in top_products:
+            product_id = product.get('product_id')
+            if product_id not in seen:
+                seen.add(product_id)
+                unique_top_products.append(product)
+        self.top_products = unique_top_products
