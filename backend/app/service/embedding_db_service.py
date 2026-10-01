@@ -1,6 +1,7 @@
 from app.embeddings.embedding_service import EmbeddingService
 from app.vector_db.vector_store import VectorStore
 from app.embeddings.providers.huggingface import HuggingFaceEmbedding
+from app.state.userState import UserState
 class EmbeddingDBService:
     def __init__(self):
         embedding_model = HuggingFaceEmbedding()
@@ -17,3 +18,8 @@ class EmbeddingDBService:
 
     def delete_embedding(self, pid: list[str]):
         self.vector_store.delete(pid)
+        
+    def user_embedding(self, user_id: int)-> list[float]:
+        userstate=UserState.get_current_state(user_id)
+        vector=self.embedding_service.embed(userstate)
+        return vector

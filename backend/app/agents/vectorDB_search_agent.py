@@ -26,3 +26,12 @@ class VectorDBSearchAgent:
             self.userstate.add_top_products_to_userState(top_products)
             print(f"Top products added to user state for user_id: {self.user_id}")    
             
+            
+    def search_vectors(self,vector: list[float], top_k: int) -> list[dict[str, Any]]:
+        if self.user_id is None:
+            print("User ID is not set. Cannot perform search.")
+        else:
+            print(f"Searching vector database for user_id: {self.user_id} with vector: {vector}")
+            top_products = self.embedding_db_service.search_embedding(vector, top_k=top_k)   
+            print(f"Search completed for user_id: {self.user_id} with vector: {vector}")
+            return top_products
