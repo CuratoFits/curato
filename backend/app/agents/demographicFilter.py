@@ -9,7 +9,8 @@ from app.llm.userBehaviorLLM import userBehaviorLLM
 from app.vector_db.vector_store import VectorDBSearchAgent
 
 class DemographicFilter:
-    def __init__(self):
+    def __init__(self,userstate: UserState):
+        self.userstate = userstate
         self.user_id=None
         self.age=None
         self.gender=None
@@ -29,7 +30,7 @@ class DemographicFilter:
         else:
             print(f"No user profile found for user_id: {user_id}")
             
-    def filter_products_by_demographics(self, userState: UserState): 
+    def filter_products_by_demographics(self): 
         if self.age is None or self.gender is None or self.city is None or self.state is None or self.country is None:
             print("Demographic attributes are not initialized.")
             return []
@@ -59,9 +60,9 @@ class DemographicFilter:
             })
             current_user_demographic_preferences.extend(users_preferences)
         demographic_insights = userBehaviorLLM().analyze_user_behavior(current_user_demographic_preferences)
-        userState.update_user_preferences(self.user_id, demographic_insights)
-        candidate_products = VectorDBSearchAgent().searchVectorDB(userState.get_current_state(self.user_id))
-        userState.add_top_products_to_userState(candidate_products)
+        self.userstate.update_user_preferences(self.user_id, demographic_insights)
+        candidate_products = VectorDBSearchAgent().searchVectorDB(self.userstate.get_current_state(self.user_id))
+        self.userstate.add_top_products_to_userState(candidate_products)
         print(f"Demographic filtering completed for user_id: {self.user_id} with candidate products: {candidate_products}")
         
             
