@@ -15,7 +15,8 @@ class VectorDBSearchAgent:
             vector=self.embedding_db_service.get_vector(insights)
             top_products = self.embedding_db_service.search_products(vector, top_k=100)   
             print(f"Search completed for user_id: {self.user_id}")
-            self.add_top_products_to_userState(top_products)
+            product_ids = top_products['ids'][0]
+            self.add_top_products_to_userState(product_ids)
     
     def add_top_products_to_userState(self, top_products:list[dict[str,Any]]):
         if self.user_id is None:
@@ -32,4 +33,6 @@ class VectorDBSearchAgent:
             print(f"Searching vector database for user_id: {self.user_id} with vector: {vector}")
             top_products = self.embedding_db_service.search_products(vector, top_k=top_k)   
             print(f"Search completed for user_id: {self.user_id} with vector: {vector}")
-            return top_products
+            product_ids = top_products['ids'][0]
+            self.userstate.add_top_products_to_userState(product_ids)
+            
