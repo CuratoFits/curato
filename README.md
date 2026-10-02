@@ -249,6 +249,4 @@ User Behavior Agent
 User State
 → Carries user information through the recommendation workflow
 
-Recommendation Node
-→ Generates personalized recommendations
 ```
