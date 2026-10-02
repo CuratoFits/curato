@@ -246,7 +246,4 @@ Event Fetcher
 User Behavior Agent
 → Uses an LLM to understand behaviour and extract preferences
 
-User State
-→ Carries user information through the recommendation workflow
-
 ```
