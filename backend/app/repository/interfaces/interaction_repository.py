@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from app.models.interaction import InteractionEvent
+
 from app.schemas.interaction import (
     InteractionEventCreate,
     InteractionEventUpdate,
