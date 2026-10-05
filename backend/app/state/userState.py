@@ -10,33 +10,25 @@ class UserState():
         self.events: list[dict[str, Any]]= []
         self.user_preferences: list[dict[str, Any]] = []
         self.top_products: list[dict[str, Any]] = []
-
-    def updateUserState(self,user_id: str) -> None:
-        events = PostgresHandler.get_events_from_postgres(user_id)
-        self.user_id = user_id
-        self.events.extend(events)
-        print(f"User state updated for user_id: {user_id} with events: {events}")
         
     def get_current_state(self, user_id: str) -> dict[str, Any]:
-        if self.user_id == user_id:
-            return {
-                "events": self.events,
-                "user_preferences": self.user_preferences,
-                "top_products": self.top_products
-            }
-        else:
-            print(f"User ID mismatch: expected {self.user_id}, got {user_id}")
-            return {
-                "events": [],
-                "user_preferences": [],
-                "top_products": []
-            }
-    
-    def userPreferences(self, user_id: str) -> dict[str, Any]:
-        insights = UserBehaviorAgent().user_behavior(user_id)
-        self.user_preferences.extend(insights)
-        print(f"User preferences updated for user_id: {user_id} with insights: {insights}")
+        self.user_id= user_id
+        events= PostgresHandler().get_current_interaction_events(user_id)
+        recent_events=[]
+        for event in events:
+            prod_id= event.product_id
+            event_type= event.event_type
+            recent_events.append({"product_id": prod_id, "event_type": event_type})
+        self.events= recent_events
+        self.user_preferences= UserBehaviorAgent.user_behavior(user_id) 
+        current_state={
+            "user_id": self.user_id,
+            "events": self.events,
+            "user_preferences": self.user_preferences,
+        }
+        return current_state
             
+    
     def get_user_id(self) -> str | None:
         return self.user_id        
     
@@ -47,26 +39,18 @@ class UserState():
             self.top_products.extend(top_products)
             self.check_duplication_in_top_products(self.top_products)
             print(f"Top products added to user state for user_id: {self.user_id} with products: {top_products}")
-            
-    def update_user_preferences(self, user_id: str, preferences: dict[str, Any]) -> None:
-        if self.user_id == user_id:
-            self.user_preferences.extend(preferences)
-            print(f"User preferences updated for user_id: {user_id} with preferences: {preferences}")
-        else:
-            print(f"User ID mismatch: expected {self.user_id}, got {user_id}. Preferences not updated.")        
-            
-    def vectorDB_search(self) -> list[dict[str, Any]]:
-        text=self.get_current_state(self.user_id)
-        candidate_products= VectorDBSearchAgent().searchVectorDB(text)
-        UserState.add_top_products_to_userState(self, candidate_products)
-        print(f"VectorDB search completed for user_id: {self.user_id} with candidate products: {candidate_products}")    
-        
+    
     def check_duplication_in_top_products(self, top_products: list[dict[str, Any]]) -> None:
-        seen = set()
-        unique_top_products = []
-        for product in top_products:
-            product_id = product.get('product_id')
-            if product_id not in seen:
-                seen.add(product_id)
-                unique_top_products.append(product)
-        self.top_products = unique_top_products
+            seen = set()
+            unique_top_products = []
+            for product in top_products:
+                product_id = product.get('product_id')
+                if product_id not in seen:
+                    seen.add(product_id)
+                    unique_top_products.append(product)
+            self.top_products = unique_top_products
+                  
+   
+      
+        
+    

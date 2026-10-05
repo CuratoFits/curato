@@ -18,7 +18,7 @@ class PostgresHandler:
             print(f"Error at get_events_from_postgres: {e}")
             return []
     
-    def get_current_interaction_events(self, user_id: int, limit: int = 20):
+    def get_current_interaction_events(self, user_id: int, limit: int = 20)-> list[InteractionEvent]:
         try:
             events = self.db.query(InteractionEvent).filter(
                 InteractionEvent.user_id == user_id

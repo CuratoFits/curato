@@ -8,10 +8,12 @@ class VectorDBSearchAgent:
         self.userstate =userstate
         self.user_id = userstate.get_user_id()
         
-    def contentBasedFilter(self,insights:dict[str,Any]) -> list[dict[str, Any]]:
+    def contentBasedFilter(self,current_state: dict[str, Any]) -> list[dict[str, Any]]:
         if self.user_id is None:
             print("User ID is not set. Cannot perform search.")
         else:
+            current_preferences= current_state.get("user_preferences", [])
+            insights=current_preferences
             vector=self.embedding_db_service.get_vector(insights)
             top_products = self.embedding_db_service.search_products(vector, top_k=100)   
             print(f"Search completed for user_id: {self.user_id}")
